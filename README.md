@@ -1,45 +1,44 @@
-# secrets-leak-detector
+# Secrets Leak Detector
 
 ![Build](https://github.com/Godark14/secrets-leak-detector/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/MARKETPLACE_ID.svg)](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID)
 
-## Template ToDo list
-- [x] Create a new [IntelliJ Platform Plugin Template][template] project.
-- [ ] Get familiar with the [template documentation][template].
-- [ ] Adjust the [group](./gradle.properties), as well as the [id](./src/main/resources/META-INF/plugin.xml), [name](./src/main/resources/META-INF/plugin.xml), and [sources package](./src/main/kotlin).
-- [ ] Adjust the plugin [description](./src/main/resources/META-INF/plugin.xml) (see [Tips][docs:plugin-description]) and this README to describe what your plugin does.
-- [ ] Review the [Legal Agreements](https://plugins.jetbrains.com/docs/marketplace/legal-agreements.html?from=IJPluginTemplate).
-- [ ] [Publish a plugin manually](https://plugins.jetbrains.com/docs/intellij/publishing-plugin.html?from=IJPluginTemplate) for the first time.
-- [ ] Set the `MARKETPLACE_ID` in the above README badges. You can obtain it once the plugin is published to JetBrains Marketplace.
-- [ ] Set the [Plugin Signing](https://plugins.jetbrains.com/docs/intellij/plugin-signing.html?from=IJPluginTemplate) related [secrets](https://github.com/JetBrains/intellij-platform-plugin-template#environment-variables).
-- [ ] Set the [Deployment Token](https://plugins.jetbrains.com/docs/marketplace/plugin-upload.html?from=IJPluginTemplate).
-- [ ] Click the <kbd>Watch</kbd> button on the top of the [IntelliJ Platform Plugin Template][template] to be notified about releases containing new features and fixes.
+An IntelliJ Platform plugin that scans your files and flags hardcoded secrets — API keys, tokens, and private keys — directly in the editor, before they end up in a commit.
 
-This Fancy IntelliJ Platform Plugin is going to be your implementation of the brilliant ideas that you have.
+## What it detects
+
+- AWS access keys and secret keys
+- GitHub personal access tokens
+- Slack tokens
+- RSA/EC/OpenSSH private keys
+- Generic API keys and access tokens (using keyword matching + entropy analysis to reduce false positives)
+
+The inspection runs on **all text files**, not just source code — so secrets in `.env`, `.yml`, `.properties`, and config files are caught too.
+
+## Reducing false positives
+
+To keep noise low, the inspection skips:
+- Common placeholder values (`YOUR_API_KEY_HERE`, `changeme`, `example`, etc.)
+- Repeated-character strings (`xxxxxxxx`, `00000000`)
+- Low-entropy values that look more like dictionary words than random secrets
+- Files under `node_modules/`, `build/`, `.git/`, `.gradle/`, `.idea/`, `dist/`, and `out/`
+- Files ignored by your project's VCS (e.g. matched by `.gitignore`)
 
 ## Installation
 
 - Using the IDE built-in plugin system:
 
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "secrets-leak-detector"</kbd> >
-  <kbd>Install</kbd>
-
-- Using JetBrains Marketplace:
-
-  Go to [JetBrains Marketplace](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID) and install it by clicking the <kbd>Install to ...</kbd> button in case your IDE is running.
-
-  You can also download the [latest release](https://plugins.jetbrains.com/plugin/MARKETPLACE_ID/versions) from JetBrains Marketplace and install it manually using
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+  Settings/Preferences > Plugins > Marketplace > Search for "Secrets Leak Detector" > Install
 
 - Manually:
 
-  Download the [latest release](https://github.com/Godark14/secrets-leak-detector/releases/latest) and install it manually using
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+  Download the [latest release](https://github.com/Godark14/secrets-leak-detector/releases) and install it via Settings/Preferences > Plugins > Install plugin from disk...
 
+## Contributing
 
----
-Plugin based on the [IntelliJ Platform Plugin Template][template].
+Issues and pull requests are welcome. This project is built on the [IntelliJ Platform Plugin Template][template].
+
+## License
+
+[MIT](./LICENSE)
 
 [template]: https://github.com/JetBrains/intellij-platform-plugin-template
-[docs:plugin-description]: https://plugins.jetbrains.com/docs/intellij/plugin-user-experience.html#plugin-description-and-presentation
