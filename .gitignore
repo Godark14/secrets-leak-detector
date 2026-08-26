@@ -7,3 +7,7 @@ build
 out/
 *.iml
 local.properties
+private_key.pem
+chain.crt
+*.pem
+*.crt

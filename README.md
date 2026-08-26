@@ -9,10 +9,18 @@ An IntelliJ Platform plugin that scans your files and flags hardcoded secrets â€
 - AWS access keys and secret keys
 - GitHub personal access tokens
 - Slack tokens
+- Google Cloud API keys and service account private keys
+- Stripe live secret/restricted keys
+- JSON Web Tokens (JWT)
+- Database connection strings with a plaintext password (PostgreSQL, MySQL, MongoDB, Redis)
 - RSA/EC/OpenSSH private keys
 - Generic API keys and access tokens (using keyword matching + entropy analysis to reduce false positives)
 
 The inspection runs on **all text files**, not just source code â€” so secrets in `.env`, `.yml`, `.properties`, and config files are caught too.
+
+## Quick fix
+
+Each detected secret comes with a one-click "Replace with placeholder" quick fix (Alt+Enter) that swaps the value for `REDACTED_SECRET` directly in the editor.
 
 ## Reducing false positives
 

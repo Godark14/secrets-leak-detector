@@ -4,16 +4,33 @@
     <name>Secrets Leak Detector</name>
     <vendor url="https://github.com/Godark14/secrets-leak-detector">godark14</vendor>
     <description><![CDATA[
-        <p><b>Secrets Leak Detector</b> scans your source code and detects hardcoded API keys, tokens, and other secrets directly in the editor.</p>
-    ]]></description>
+    <p><b>Secrets Leak Detector</b> scans your files and flags hardcoded secrets — API keys, tokens, and private keys — directly in the editor, before they end up in a commit.</p>
+
+    <h3>What it detects</h3>
+    <ul>
+        <li>AWS access and secret keys</li>
+        <li>GitHub personal access tokens</li>
+        <li>Slack tokens</li>
+        <li>Google Cloud API keys and service account private keys</li>
+        <li>Stripe live secret/restricted keys</li>
+        <li>JSON Web Tokens (JWT)</li>
+        <li>Database connection strings with a plaintext password (PostgreSQL, MySQL, MongoDB, Redis)</li>
+        <li>RSA/EC/OpenSSH private keys</li>
+        <li>Generic API keys and access tokens, using keyword matching and entropy analysis</li>
+    </ul>
+
+    <p>The inspection runs on <b>all text files</b>, not just source code — so secrets hiding in <code>.env</code>, <code>.yml</code>, <code>.properties</code>, and other config files are caught too.</p>
+
+    <h3>One-click fix</h3>
+    <p>Each detected secret comes with a quick fix (Alt+Enter) to instantly redact it with a placeholder value.</p>
+
+    <h3>Low noise</h3>
+    <p>Placeholder values, repeated-character strings, and low-entropy matches are filtered out, and files under <code>node_modules</code>, <code>build</code>, <code>.git</code>, and other VCS-ignored paths are skipped.</p>
+]]></description>
     <depends>com.intellij.modules.platform</depends>
     <extensions defaultExtensionNs="com.intellij">
-        <localInspection
-            language=""
-            displayName="Hardcoded secret detected"
-            groupName="Secrets Leak Detector"
-            enabledByDefault="true"
-            level="WARNING"
-            implementationClass="com.github.godark14.secretsleakdetector.inspections.SecretLeakInspection"/>
+        <localInspection displayName="Hardcoded secret detected" enabledByDefault="true"
+            groupName="Secrets Leak Detector" implementationClass="com.github.godark14.secretsleakdetector.inspections.SecretLeakInspection" language=""
+            level="WARNING" />
     </extensions>
 </idea-plugin>
