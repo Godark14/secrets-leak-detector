@@ -70,4 +70,44 @@ class SecretLeakInspectionTest : BasePlatformTestCase() {
         )
         myFixture.testHighlighting(true, false, false)
     }
+    fun testQuickFixReplacesSecretWithPlaceholder() {
+        myFixture.configureByText(
+            "test.env",
+            "AWS_ACCESS_KEY=<caret>AKIAIOSFODNN7EXAMPLE"
+        )
+        val intention = myFixture.findSingleIntention("Replace with placeholder")
+        myFixture.launchAction(intention)
+        myFixture.checkResult("AWS_ACCESS_KEY=REDACTED_SECRET")
+    }
+    fun testDetectsGoogleCloudApiKey() {
+        myFixture.configureByText(
+            "test.env",
+            "GOOGLE_API_KEY=<warning descr=\"Potential hardcoded secret detected: Google Cloud API Key\">AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY</warning>"
+        )
+        myFixture.testHighlighting(true, false, false)
+    }
+
+    fun testDetectsStripeSecretKey() {
+        myFixture.configureByText(
+            "test.env",
+            "STRIPE_KEY=<warning descr=\"Potential hardcoded secret detected: Stripe Secret Key\">sk_live_4eC39HqLyjWDarjtT1zdp7dc</warning>"
+        )
+        myFixture.testHighlighting(true, false, false)
+    }
+
+    fun testDetectsJwt() {
+        myFixture.configureByText(
+            "test.env",
+            "TOKEN=<warning descr=\"Potential hardcoded secret detected: JWT\">eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dGhpc2lzYWZha2VzaWduYXR1cmU</warning>"
+        )
+        myFixture.testHighlighting(true, false, false)
+    }
+
+    fun testDetectsDatabaseConnectionStringPassword() {
+        myFixture.configureByText(
+            "test.env",
+            "DB_URL=postgres://admin:<warning descr=\"Potential hardcoded secret detected: Database Connection String with Password\">S3cr3tP4ss</warning>@db.example.com:5432/mydb"
+        )
+        myFixture.testHighlighting(true, false, false)
+    }
 }

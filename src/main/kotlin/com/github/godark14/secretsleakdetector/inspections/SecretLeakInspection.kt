@@ -2,11 +2,14 @@ package com.github.godark14.secretsleakdetector.inspections
 
 import com.intellij.codeInspection.InspectionManager
 import com.intellij.codeInspection.LocalInspectionTool
+import com.intellij.codeInspection.LocalQuickFix
 import com.intellij.codeInspection.ProblemDescriptor
 import com.intellij.codeInspection.ProblemHighlightType
-import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.openapi.vcs.changes.ChangeListManager
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiFile
 import kotlin.math.log2
 
@@ -32,7 +35,16 @@ class SecretLeakInspection : LocalInspectionTool() {
             checkEntropy = true
         ),
         SecretPattern("RSA Private Key", Regex("-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----")),
-        SecretPattern("Slack Token", Regex("xox[baprs]-[0-9A-Za-z-]{10,}"))
+        SecretPattern("Slack Token", Regex("xox[baprs]-[0-9A-Za-z-]{10,}")),
+        SecretPattern("Google Cloud API Key", Regex("AIza[0-9A-Za-z_\\-]{35}")),
+        SecretPattern("Google Service Account Private Key", Regex("\"private_key\"\\s*:\\s*\"-----BEGIN PRIVATE KEY-----")),
+        SecretPattern("Stripe Secret Key", Regex("(?:sk|rk)_live_[0-9A-Za-z]{24,}")),
+        SecretPattern("JWT", Regex("eyJ[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}\\.[A-Za-z0-9_-]{5,}")),
+        SecretPattern(
+            "Database Connection String with Password",
+            Regex("(?i)(postgres(?:ql)?|mysql|mongodb(?:\\+srv)?|redis)://[^:\\s]+:([^@\\s]+)@[^\\s'\"]+"),
+            highlightGroup = 2
+        )
     )
 
     private val placeholderMarkers = listOf(
@@ -52,8 +64,6 @@ class SecretLeakInspection : LocalInspectionTool() {
         "/out/", "\\out\\"
     )
 
-    // Below this, a string is more likely to be a readable word, a placeholder,
-    // or low-variety filler than a randomly generated secret.
     private val minEntropyBitsPerChar = 3.0
 
     private fun isRepeatedCharacter(rawValue: String): Boolean {
@@ -66,10 +76,6 @@ class SecretLeakInspection : LocalInspectionTool() {
         return placeholderMarkers.any { normalized.contains(it) }
     }
 
-    /**
-     * Shannon entropy in bits per character. Computed on the raw value
-     * (quotes stripped) so surrounding syntax doesn't skew the distribution.
-     */
     private fun shannonEntropyPerChar(rawValue: String): Double {
         val value = rawValue.trim('\'', '"')
         if (value.isEmpty()) return 0.0
@@ -97,6 +103,28 @@ class SecretLeakInspection : LocalInspectionTool() {
         if (changeListManager.isIgnoredFile(virtualFile)) return true
 
         return false
+    }
+
+    private class ReplaceWithPlaceholderFix(
+        private val startOffset: Int,
+        private val endOffset: Int,
+        private val wasQuoted: Boolean
+    ) : LocalQuickFix {
+
+        override fun getFamilyName(): String = "Replace with placeholder"
+
+        override fun applyFix(project: Project, descriptor: ProblemDescriptor) {
+            val file = descriptor.psiElement.containingFile ?: return
+            val document = PsiDocumentManager.getInstance(project).getDocument(file) ?: return
+
+            val replacement = if (wasQuoted) "\"REDACTED_SECRET\"" else "REDACTED_SECRET"
+
+            WriteCommandAction.runWriteCommandAction(project) {
+                if (endOffset <= document.textLength) {
+                    document.replaceString(startOffset, endOffset, replacement)
+                }
+            }
+        }
     }
 
     override fun checkFile(
@@ -132,13 +160,16 @@ class SecretLeakInspection : LocalInspectionTool() {
                 )
                 if (safeRange.isEmpty) return@forEach
 
+                val wasQuoted = matchedValue.startsWith("'") || matchedValue.startsWith("\"")
+
                 problems.add(
                     manager.createProblemDescriptor(
                         file,
                         safeRange,
                         "Potential hardcoded secret detected: ${pattern.name}",
                         ProblemHighlightType.GENERIC_ERROR_OR_WARNING,
-                        isOnTheFly
+                        isOnTheFly,
+                        ReplaceWithPlaceholderFix(safeRange.startOffset, safeRange.endOffset, wasQuoted)
                     )
                 )
             }
